@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="Audio examples and experimental results for multi-target speech extraction with a six-microphone circular array, a shared feature extractor, and late steering-vector fusion.">
   <title>Multi-target speech extraction — Audio examples</title>
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261030-plain">
-  <link rel="stylesheet" href="styles.css?v=20261030-plain">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=20261030-baselines">
+  <link rel="stylesheet" href="styles.css?v=20261030-baselines">
 </head>
 <body>
   <a class="skip-link" href="#listen">Skip to audio examples</a>
@@ -26,7 +26,9 @@
 
     <section id="listen" class="listen-section wrap section" aria-labelledby="listen-title">
       <div class="section-heading"><h2 id="listen-title">Audio examples</h2><p class="section-condition">6 microphones · Circular array, r = 5 cm · 16 kHz</p></div>
-      <div class="listening-intro"><p>Select a scene and a target direction, then compare the input, target reference, and matched Early- and Late-fusion outputs. Switching tracks preserves the playback position.</p><p class="selection-note">These examples are curated to illustrate the method’s strengths. <a href="#evaluation">Full-test results</a> provide the aggregate comparison.</p></div>
+      <div class="listening-intro"><p>Select an experiment, scene and target direction to compare the systems on the same mixture. Switching tracks preserves the playback position.</p><p class="selection-note">These examples are curated to illustrate the method’s strengths. All compared systems and both targets are retained. <a href="#evaluation">Full-test results</a> provide the aggregate comparison.</p></div>
+      <div id="comparison-switch" class="comparison-switch" role="group" aria-label="Experiment group"><button type="button" data-suite="paper" aria-pressed="true">Paper model comparison</button><button type="button" data-suite="controlled" aria-pressed="false">Early/Late &amp; robustness</button></div>
+      <p id="suite-description" class="suite-description"></p>
       <div class="listening-layout">
         <aside class="case-sidebar" aria-label="Scenes and array geometry">
           <div class="sidebar-caption">Scene <span id="case-count">—</span></div>
@@ -45,19 +47,13 @@
           <details class="scene-details"><summary>Scene and evaluation details <span aria-hidden="true">+</span></summary><div id="scene-details-content"></div></details>
         </div>
       </div>
-      <div class="listening-footnote"><p>All players present prerecorded model outputs; inference does not run in the browser. A common playback gain within each scene preserves relative levels across comparison tracks. Waveform displays are normalized individually for visibility.</p><a href="data/selection-manifest.json" download>Selection data (JSON)</a></div>
+      <div class="listening-footnote"><p>All players present prerecorded model outputs; inference does not run in the browser. A common playback gain within each scene preserves relative levels across comparison tracks. Waveform displays are normalized individually for visibility.</p><a id="selection-download" href="data/baseline-examples.json" download>Selection data (JSON)</a></div>
     </section>
 
     <section id="method" class="method-section section wrap" aria-labelledby="method-title">
       <div class="section-heading"><h2 id="method-title">Method</h2><p class="section-condition">Late steering-vector fusion</p></div>
       <p class="section-intro">A direction-agnostic front end computes mixture features once. A parameter-shared beamforming head combines these features with each requested steering direction to estimate target-specific spatial weights.</p>
-      <div class="method-flow" aria-label="Multichannel mixture passes through a shared feature extractor, followed by one head evaluation per requested direction">
-        <div class="flow-input"><strong>Multichannel mixture</strong><span>Six microphone signals</span></div><span class="flow-arrow" aria-hidden="true">→</span>
-        <div class="flow-core"><strong>Shared feature extractor</strong><span>One evaluation per mixture</span></div><span class="flow-arrow" aria-hidden="true">→</span>
-        <div class="flow-heads"><div><span class="source-a">A</span><strong>Beamforming head</strong><small>+ steering vector A</small></div><div><span class="source-b">B</span><strong>Same head parameters</strong><small>+ steering vector B</small></div></div><span class="flow-arrow" aria-hidden="true">→</span>
-        <div class="flow-output"><span class="source-a">Target A</span><span class="source-b">Target B</span></div>
-      </div>
-      <p class="method-caption">The front-end representation is reused across targets. The head is evaluated separately for each requested direction.</p>
+      <figure class="method-paper-figure"><div class="method-image-scroll"><a href="assets/method-architecture.svg" target="_blank" rel="noopener"><img src="assets/method-architecture.svg" width="1020" height="296" alt="Figure 1 from the manuscript: shared front-end architecture, target-specific beamforming head, and the Lightweight encoder, grouped GRU and decoder blocks." loading="lazy"></a></div><figcaption>Figure 1. Overall architecture of the proposed multi-target speech extraction framework. <a href="assets/method-architecture.svg" target="_blank" rel="noopener">Full-size figure</a> · <a href="assets/method-architecture.pdf" target="_blank" rel="noopener">PDF</a></figcaption></figure>
     </section>
 
     <section id="efficiency" class="efficiency-section section wrap" aria-labelledby="efficiency-title">
@@ -83,7 +79,7 @@
 
     <section id="evaluation" class="evaluation-section section wrap" aria-labelledby="evaluation-title">
       <div class="section-heading"><h2 id="evaluation-title">Full-test results</h2><p class="section-condition">Original two-source test set</p></div>
-      <div class="evaluation-layout"><div class="evaluation-copy"><p>Across 370 original two-source test configurations and four nominal array SNRs, matched Late fusion improves mean SI-SDR over Early fusion.</p><p>Closely spaced sources remain challenging: mean SI-SDR is negative at 10° separation. Late fusion does not lead every quality metric.</p></div><div class="aggregate-panel"><table class="aggregate-table"><caption>Mean SI-SDR · Both targets evaluated</caption><thead><tr><th scope="col">Model</th><th scope="col">SI-SDR</th></tr></thead><tbody><tr><th scope="row">Early fusion</th><td id="aggregate-early">3.82<small>dB</small></td></tr><tr><th scope="row">Late fusion</th><td id="aggregate-late">4.20<small>dB</small></td></tr></tbody></table><p class="aggregate-meta">370 acoustic configurations · 0 / 5 / 10 / 15 dB array SNR</p></div></div>
+      <div class="evaluation-layout"><div class="evaluation-copy"><p>Table 1 of the manuscript reports the following mean SI-SDR values across 370 original two-source configurations and four nominal array SNRs, with both targets evaluated. Shared-front-end JNF-SSF has the highest mean SI-SDR in the paper model comparison.</p><p>The matched Lightweight Early/Late ablation uses separate checkpoints. Its aggregate results are reported separately from the archived backbone comparison.</p><p>Closely spaced sources remain challenging: mean SI-SDR is negative at 10° separation in the matched Late-fusion test. Shared models do not lead every quality metric; DISF has the highest mean DNSMOS in the paper comparison.</p></div><div class="aggregate-panel aggregate-tables"><table class="aggregate-table"><caption>Paper model comparison · Mean SI-SDR</caption><thead><tr><th scope="col">Model</th><th scope="col">SI-SDR</th></tr></thead><tbody><tr><th scope="row">Noisy mixture</th><td>−4.28<small>dB</small></td></tr><tr><th scope="row">DISF</th><td>4.20<small>dB</small></td></tr><tr><th scope="row">JNF-SSF</th><td>5.08<small>dB</small></td></tr><tr><th scope="row">JNF-SSF (shared)</th><td>6.34<small>dB</small></td></tr><tr><th scope="row">EaBNet (shared)</th><td>4.34<small>dB</small></td></tr><tr><th scope="row">TaylorBeamformer (shared)</th><td>4.16<small>dB</small></td></tr><tr><th scope="row">Lightweight (shared)</th><td>4.01<small>dB</small></td></tr></tbody></table><table class="aggregate-table"><caption>Matched Lightweight ablation · Mean SI-SDR</caption><thead><tr><th scope="col">Fusion point</th><th scope="col">SI-SDR</th></tr></thead><tbody><tr><th scope="row">Early fusion</th><td id="aggregate-early">3.82<small>dB</small></td></tr><tr><th scope="row">Late fusion</th><td id="aggregate-late">4.20<small>dB</small></td></tr></tbody></table><p class="aggregate-meta">370 acoustic configurations · 0 / 5 / 10 / 15 dB array SNR</p></div></div>
       <p class="evaluation-note">Array SNR compares summed fully reverberant speech with additive noise, averaged over time and all six microphones. It is not a fixed per-target TNR.</p>
     </section>
 
@@ -96,6 +92,6 @@
   </main>
   <footer class="site-footer wrap"><span>Multi-target speech extraction · Audio examples</span><a href="#top">Back to top ↑</a></footer>
   <audio id="shared-audio" preload="metadata"></audio>
-  <script src="app.js?v=20261030-plain"></script>
+  <script src="app.js?v=20261030-baselines"></script>
 </body>
 </html>

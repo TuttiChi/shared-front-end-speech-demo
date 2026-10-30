@@ -3,7 +3,7 @@
   'use strict';
   const $ = (selector) => document.querySelector(selector);
   const audio = $('#shared-audio');
-  const state = { cases: [], facts: null, caseIndex: 0, targetIndex: 0, track: null, position: 0, playing: false, request: 0, n: 3 };
+  const state = { cases: [], suites: {}, suite: 'paper', facts: null, caseIndex: 0, targetIndex: 0, track: null, position: 0, playing: false, request: 0, n: 3 };
   const playbackLabels = { mixture: 'Input mixture', reference: 'Target reference', early: 'Early fusion', late: 'Late fusion' };
   const icons = {
     play: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.3 13 8l-9 5.7Z"/></svg>',
@@ -14,10 +14,11 @@
   const currentCase = () => state.cases[state.caseIndex];
   const currentTarget = () => currentCase()?.targets[state.targetIndex];
   const number = value => typeof value === 'number' && Number.isFinite(value);
-  const metric = kind => { const x = currentTarget()?.metrics?.[kind]; return number(x) ? x : (number(x?.si_sdr) ? x.si_sdr : x?.si_sdr_db); };
+  const metric = kind => { const m = currentTarget()?.methods?.find(m=>m.id===kind); if(m)return m.metrics?.si_sdr_db; const x = currentTarget()?.metrics?.[kind]; return number(x) ? x : (number(x?.si_sdr) ? x.si_sdr : x?.si_sdr_db); };
   const angle = x => number(x) ? `${Number(x.toFixed(1))}°` : '—';
-  const trackData = kind => kind === 'mixture' ? currentCase()?.mixture : currentTarget()?.tracks?.[kind];
-  const categoryLabels = { standard: 'Correct DOA', doa: 'DOA offset', unseen: 'Unseen readers' };
+  const trackData = kind => kind === 'mixture' ? currentCase()?.mixture : kind === 'reference' ? (currentTarget()?.reference || currentTarget()?.tracks?.reference) : (currentTarget()?.methods?.find(m=>m.id===kind) || currentTarget()?.tracks?.[kind]);
+  const trackKinds = () => ['mixture','reference',...(currentTarget()?.methods?.map(m=>m.id) || ['early','late'])];
+  const categoryLabels = { paper: 'Paper comparison', standard: 'Correct DOA', doa: 'DOA offset', unseen: 'Unseen readers' };
 
   function renderArrayGeometry() {
     const host = $('#array-geometry');
@@ -35,7 +36,7 @@
     }).join('');
     const rays = c.targets.map((t, i) => {
       const p = point(t.doaDeg, 81), active = i === state.targetIndex;
-      return `<g><line x1="${cx}" y1="${cy}" x2="${coord(p[0])}" y2="${coord(p[1])}" stroke="${colors[i]}" stroke-width="${active ? 2.2 : 1.25}"/><circle cx="${coord(p[0])}" cy="${coord(p[1])}" r="9" fill="#fff" stroke="${colors[i]}" stroke-width="${active ? 2 : 1.25}"/><text x="${coord(p[0])}" y="${coord(p[1]+3.5)}" text-anchor="middle" fill="${colors[i]}" font-size="10" font-weight="600">${i+1}</text></g>`;
+      return `<g><line x1="${cx}" y1="${cy}" x2="${coord(p[0])}" y2="${coord(p[1])}" stroke="${colors[i]}" stroke-width="${active ? 2.2 : 1.25}"/><circle cx="${coord(p[0])}" cy="${coord(p[1])}" r="9" fill="#fff" stroke="${colors[i]}" stroke-width="${active ? 2 : 1.25}"/><text x="${coord(p[0])}" y="${coord(p[1]+3.5)}" text-anchor="middle" fill="${colors[i]}" font-size="10" font-weight="600">${escape((t.label || String(i+1)).replace(/^Target\s+/,''))}</text></g>`;
     }).join('');
     const microphones = Array.from({length:6}, (_,i) => {
       const p = point(i*60,23);
@@ -48,7 +49,7 @@
     const offset = Math.abs(((requested-selected.doaDeg+540)%360)-180);
     const p = point(requested,98);
     const steering = offset > .01 ? `<line x1="${cx}" y1="${cy}" x2="${coord(p[0])}" y2="${coord(p[1])}" stroke="${colors[state.targetIndex]}" stroke-width="1.5" stroke-dasharray="5 3"/><path d="M${coord(p[0]-3)},${coord(p[1]-3)}l6,6m0,-6l-6,6" stroke="${colors[state.targetIndex]}"/>` : '';
-    host.innerHTML = `<svg viewBox="0 0 320 280" role="img" aria-labelledby="array-diagram-title array-diagram-desc" style="font-family:Arial,sans-serif"><title id="array-diagram-title">Source azimuths for ${escape(c.title)}</title><desc id="array-diagram-desc">Six microphones on a circular array. Target 1: ${angle(c.targets[0].doaDeg)}. Target 2: ${angle(c.targets[1].doaDeg)}. Selected ${escape(selected.label)}; supplied direction ${angle(requested)}. Schematic directions, not a beam pattern.</desc><text x="150" y="16" text-anchor="middle" font-size="12" fill="#40515b">Source separation Δθ = ${angle(c.separationDeg)}</text><g fill="none" stroke="#dce1e5" stroke-width="1"><circle cx="150" cy="122" r="84"/><path d="M50 122H250M150 24V220"/></g>${ticks}<g fill="#64717b" font-size="10"><text x="256" y="126">0°</text><text x="150" y="32" text-anchor="middle">90°</text><text x="40" y="126" text-anchor="end">180°</text><text x="150" y="231" text-anchor="middle">270°</text></g>${arc}${rays}${steering}<circle cx="150" cy="122" r="23" fill="#fff" stroke="#b3bcc2"/>${microphones}<text x="150" y="125.5" text-anchor="middle" fill="#58636a" font-size="9">6 ch.</text><g font-size="11"><circle cx="27" cy="249" r="3" fill="${colors[0]}"/><text x="36" y="253" fill="#36464f">Target 1: ${angle(c.targets[0].doaDeg)}</text><circle cx="166" cy="249" r="3" fill="${colors[1]}"/><text x="175" y="253" fill="#36464f">Target 2: ${angle(c.targets[1].doaDeg)}</text><text x="150" y="273" text-anchor="middle" fill="${colors[state.targetIndex]}">${escape(selected.label)} steering: ${angle(requested)}${offset>.01?' · dashed line':''}</text></g></svg>`;
+    host.innerHTML = `<svg viewBox="0 0 320 280" role="img" aria-labelledby="array-diagram-title array-diagram-desc" style="font-family:Arial,sans-serif"><title id="array-diagram-title">Source azimuths for ${escape(c.title)}</title><desc id="array-diagram-desc">Six microphones on a circular array. ${escape(c.targets[0].label)}: ${angle(c.targets[0].doaDeg)}. ${escape(c.targets[1].label)}: ${angle(c.targets[1].doaDeg)}. Selected ${escape(selected.label)}; supplied direction ${angle(requested)}. Schematic directions, not a beam pattern.</desc><text x="150" y="16" text-anchor="middle" font-size="12" fill="#40515b">Source separation Δθ = ${angle(c.separationDeg)}</text><g fill="none" stroke="#dce1e5" stroke-width="1"><circle cx="150" cy="122" r="84"/><path d="M50 122H250M150 24V220"/></g>${ticks}<g fill="#64717b" font-size="10"><text x="256" y="126">0°</text><text x="150" y="32" text-anchor="middle">90°</text><text x="40" y="126" text-anchor="end">180°</text><text x="150" y="231" text-anchor="middle">270°</text></g>${arc}${rays}${steering}<circle cx="150" cy="122" r="23" fill="#fff" stroke="#b3bcc2"/>${microphones}<text x="150" y="125.5" text-anchor="middle" fill="#58636a" font-size="9">6 ch.</text><g font-size="11"><circle cx="27" cy="249" r="3" fill="${colors[0]}"/><text x="36" y="253" fill="#36464f">${escape(c.targets[0].label)}: ${angle(c.targets[0].doaDeg)}</text><circle cx="166" cy="249" r="3" fill="${colors[1]}"/><text x="175" y="253" fill="#36464f">${escape(c.targets[1].label)}: ${angle(c.targets[1].doaDeg)}</text><text x="150" y="273" text-anchor="middle" fill="${colors[state.targetIndex]}">${escape(selected.label)} steering: ${angle(requested)}${offset>.01?' · dashed line':''}</text></g></svg>`;
   }
 
   function waveform(peaks, id) {
@@ -68,22 +69,37 @@
     $('#case-list').innerHTML = state.cases.map((c, index) => `<button type="button" class="case-choice" data-case="${index}" role="tab" aria-controls="workbench" aria-selected="${index===state.caseIndex}" tabindex="${index===state.caseIndex?0:-1}"><span class="case-index">${String(index+1).padStart(2,'0')}</span><span><strong>${escape(c.title)}</strong><small>${escape(c.separationDeg)}° separation · ${escape(c.snrDb)} dB array SNR</small><span class="case-type">${escape(categoryLabels[c.category] || c.kicker || 'Selected example')}</span></span></button>`).join('');
   }
 
+  function renderSuite() {
+    document.querySelectorAll('[data-suite]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.suite===state.suite)));
+    $('#suite-description').textContent = state.suite==='paper'
+      ? 'Two-source comparison from the paper: DISF, original JNF-SSF, and four shared-front-end systems. All six processed outputs use the same mixture and target. These are archived comparison outputs; the matched Early/Late experiment is shown separately.'
+      : 'Matched Lightweight Early/Late models, including direction errors and unseen-reader examples. These checkpoints are separate from the archived Lightweight shared model in the paper comparison.';
+    $('#selection-download').href=state.suite==='paper'?'data/baseline-examples.json':'data/selection-manifest.json';
+  }
+
   function renderExample() {
     const c = currentCase(); const target = currentTarget();
+    (target.methods || []).forEach(m=>{playbackLabels[m.id]=m.label;});
+    $('#tracks').dataset.comparison=state.suite;
+    $('#workbench').dataset.comparison=state.suite;
     $('#workbench').setAttribute('aria-busy', 'false');
     $('#case-kicker').textContent = c.kicker || categoryLabels[c.category] || 'SELECTED EXAMPLE';
     $('#case-title').textContent = c.title;
     $('#case-description').textContent = c.description || 'Compare matched Early and Late fusion on the same mixture and requested target.';
     $('#scene-meta').innerHTML = `<span><strong>${escape(c.snrDb)} dB</strong> array SNR</span><span><strong>${escape(c.separationDeg)}°</strong> separation</span><span><strong>${escape(c.duration || 31)} s</strong> full recording</span>${c.offsetKind && c.offsetKind !== 'zero' ? `<span><strong>${escape(Math.abs(c.offsetDeg || 0))}°</strong> ${escape(c.offsetKind)} interferer</span>` : '<span>True target DOA</span>'}`;
     $('#target-tabs').innerHTML = c.targets.map((t,index) => `<button type="button" class="target-button" data-target="${index}" role="tab" aria-label="${escape(t.label || `Target ${index+1}`)} at ${angle(t.doaDeg)}" aria-controls="tracks" aria-selected="${index===state.targetIndex}" tabindex="${index===state.targetIndex?0:-1}">${escape(t.label || `Target ${index+1}`)}<span class="target-direction">${angle(t.doaDeg)}</span></button>`).join('');
-    $('#tracks').innerHTML = ['mixture','reference','early','late'].map((kind,index) => {
+    $('#tracks').innerHTML = trackKinds().map((kind,index) => {
       const track = trackData(kind); const score = metric(kind);
-      const scoreText = (kind==='early' || kind==='late') && number(score) ? `<span class="track-metric">${score.toFixed(2)}<small>dB SI-SDR</small></span>` : '';
-      return `<div class="audio-track ${state.track===kind?'active':''}" data-kind="${kind}"><button type="button" class="play-button" data-play="${kind}" aria-label="Play ${playbackLabels[kind]} for ${escape(target.label || 'selected target')}" ${track?.src?'':'disabled'}>${icons.play}</button><div class="track-label"><strong>${playbackLabels[kind]}</strong>${kind==='late'?'<span class="track-tag">PROPOSED</span>':''}${scoreText}</div><div class="waveform-wrap">${waveform(track?.peaks,`wave-${index}`)}<span class="waveform-cursor"></span><input class="track-seek" type="range" min="0" max="${c.duration || 31}" step="0.01" value="${state.position}" data-seek="${kind}" aria-label="Playback position for ${playbackLabels[kind]}" ${track?.src?'':'disabled'}></div>${track?.src?`<a class="track-download" href="${escape(track.src)}" download aria-label="Download ${playbackLabels[kind]} WAV">↓</a>`:''}<span class="track-time">${fmtTime(state.position)}</span></div>`;
+      const scoreText = number(score) ? `<span class="track-metric">${score.toFixed(2)}<small>dB SI-SDR</small></span>` : '';
+      const shared = track?.variant==='shared' || kind==='late';
+      return `<div class="audio-track ${state.track===kind?'active':''}" data-kind="${escape(kind)}" data-shared="${shared}"><button type="button" class="play-button" data-play="${escape(kind)}" aria-label="Play ${escape(playbackLabels[kind])} for ${escape(target.label || 'selected target')}" ${track?.src?'':'disabled'}>${icons.play}</button><div class="track-label"><strong>${escape(playbackLabels[kind])}</strong>${kind==='late'?'<span class="track-tag">PROPOSED</span>':''}${scoreText}</div><div class="waveform-wrap">${waveform(track?.peaks,`wave-${index}`)}<span class="waveform-cursor"></span><input class="track-seek" type="range" min="0" max="${c.duration || 31}" step="0.01" value="${state.position}" data-seek="${escape(kind)}" aria-label="Playback position for ${escape(playbackLabels[kind])}" ${track?.src?'':'disabled'}></div>${track?.src?`<a class="track-download" href="${escape(track.src)}" download aria-label="Download ${escape(playbackLabels[kind])} WAV">↓</a>`:''}<span class="track-time">${fmtTime(state.position)}</span></div>`;
     }).join('');
     const early = metric('early'), late = metric('late');
     const delta = number(early) && number(late) ? `${late-early>=0?'+':''}${(late-early).toFixed(2)} dB` : '—';
     $('#scene-details-content').innerHTML = `<dl><dt>Selected target</dt><dd>${escape(target.label || `Target ${state.targetIndex+1}`)}</dd><dt>True / supplied DOA</dt><dd>${angle(target.doaDeg)} / ${angle(target.requestedDoaDeg ?? target.doaDeg)}</dd><dt>Late − Early</dt><dd>${delta} SI-SDR, full ${escape(c.duration || 31)}-second recording</dd><dt>Reference</dt><dd>Early-reflected target speech at microphone 0.</dd><dt>Source pool</dt><dd>${escape(c.category==='unseen'?'Readers absent from training and validation':(c.sourcePool || 'Original test source pool'))}</dd><dt>Scene ID</dt><dd>${escape(c.sceneId || c.id)}</dd></dl><p>Nominal array SNR uses total reverberant speech power and additive-noise power across all six microphones. The input player presents microphone 0.</p><p>Each method receives the same mixture and requested direction. Both target outputs are available via the tabs above. Waveforms show shape, with each visual normalized for legibility; audio levels use a common gain within the scene.</p>`;
+    if(state.suite==='paper') {
+      $('#scene-details-content').innerHTML = `<dl><dt>Selected target</dt><dd>${escape(target.label)}</dd><dt>True / supplied DOA</dt><dd>${angle(target.doaDeg)} / ${angle(target.requestedDoaDeg ?? target.doaDeg)}</dd><dt>Comparison</dt><dd>Six systems from the paper's two-source comparison; full ${escape(c.duration || 31)}-second recordings.</dd><dt>Reference</dt><dd>Early-reflected target speech at microphone 0.</dd><dt>Source pool</dt><dd>${escape(c.sourcePool)}</dd><dt>Scene ID</dt><dd>${escape(c.sceneId || c.id)}</dd></dl><p>All methods use the same mixture, requested direction and target reference. The input player presents microphone 0. A common playback gain is applied to all tracks in the scene; displayed waveform shapes are normalized individually.</p><p>DISF and both JNF-SSF configurations are noncausal. These archived quality outputs are separate from the matched Lightweight models used in the runtime comparison below.</p>`;
+    }
     renderArrayGeometry();
     updatePlayback();
   }
@@ -143,6 +159,14 @@
     state.caseIndex=index;state.targetIndex=0;state.position=0;state.playing=false;state.track=null;
     renderCases();renderExample();status('Select a track to listen');
   }
+  function selectSuite(name) {
+    if(name===state.suite || !state.suites[name])return;
+    ++state.request;audio.pause();audio.removeAttribute('src');audio.load();
+    state.suite=name;state.cases=state.suites[name];state.caseIndex=0;state.targetIndex=0;
+    state.position=0;state.playing=false;state.track=null;
+    renderSuite();renderCases();renderExample();status('Select a track to listen');
+  }
+  $('#comparison-switch').addEventListener('click',e=>{const b=e.target.closest('[data-suite]');if(b)selectSuite(b.dataset.suite);});
   function selectTarget(index) {
     if(index===state.targetIndex)return;
     const playing=!audio.paused;const kind=state.track;const time=state.position;
@@ -202,10 +226,11 @@
   async function load() {
     renderFacts({});
     try{
-      const [examples,facts]=await Promise.all([fetch('data/examples.json?v=20261030-plain').then(r=>{if(!r.ok)throw new Error('Missing examples');return r.json();}),fetch('data/facts.json?v=20261030-plain').then(r=>r.ok?r.json():null).catch(()=>null)]);
+      const [examples,facts,baselines]=await Promise.all([fetch('data/examples.json?v=20261030-baselines').then(r=>{if(!r.ok)throw new Error('Missing examples');return r.json();}),fetch('data/facts.json?v=20261030-baselines').then(r=>r.ok?r.json():null).catch(()=>null),fetch('data/baseline-examples.json?v=20261030-baselines').then(r=>{if(!r.ok)throw new Error('Missing baseline examples');return r.json();})]);
       const cases=examples.cases || examples.examples;
       if(!Array.isArray(cases)||!cases.length||cases.some(c=>!Array.isArray(c.targets)||!c.targets.length))throw new Error('No complete examples');
-      state.cases=cases;if(facts)renderFacts(facts);renderCases();renderExample();
+      if(!Array.isArray(baselines.cases)||!baselines.cases.length||baselines.cases.some(c=>c.targets?.length!==2 || c.targets.some(t=>t.methods?.length!==6)))throw new Error('Incomplete baseline comparison');
+      state.suites={paper:baselines.cases,controlled:cases};state.cases=state.suites[state.suite];if(facts)renderFacts(facts);renderSuite();renderCases();renderExample();
     }catch(error){
       $('#workbench').setAttribute('aria-busy','false');$('#case-title').textContent='The audio library is unavailable';
       $('#case-description').textContent='Please reload the page. If viewing the downloaded files locally, serve the folder through a local web server so the audio manifest can load.';
