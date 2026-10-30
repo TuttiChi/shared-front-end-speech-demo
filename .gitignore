@@ -1,0 +1,9 @@
+.openai/
+.private/
+selection/
+demo_facts.json
+*.log
+__pycache__/
+.DS_Store
+Thumbs.db
+node_modules/

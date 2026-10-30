@@ -1,0 +1,236 @@
+{
+  "title": "Real-time and efficient multi-target speech extraction via target-direction-agnostic feature extraction and late steering-vector fusion",
+  "short_title": "Shared-front-end speech extraction",
+  "descriptive_tagline": "One shared representation. Multiple target speakers.",
+  "status": "Research manuscript",
+  "authors": [
+    "Cheng Chi",
+    "Yuxuan Ke",
+    "Andong Li",
+    "Dan Rao",
+    "Xiaodong Li",
+    "Chengshi Zheng"
+  ],
+  "affiliations": [
+    {
+      "id": 1,
+      "name": "Key Laboratory of Noise and Vibration Research, Institute of Acoustics, Chinese Academy of Sciences",
+      "city": "Beijing, China"
+    },
+    {
+      "id": 2,
+      "name": "University of Chinese Academy of Sciences",
+      "city": "Beijing, China"
+    },
+    {
+      "id": 3,
+      "name": "School of Physics and Optoelectronics, South China University of Technology",
+      "city": "Guangzhou, China"
+    }
+  ],
+  "author_affiliation_ids": {
+    "Cheng Chi": [
+      1,
+      2
+    ],
+    "Yuxuan Ke": [
+      1,
+      2
+    ],
+    "Andong Li": [
+      1,
+      2
+    ],
+    "Dan Rao": [
+      3
+    ],
+    "Xiaodong Li": [
+      1,
+      2
+    ],
+    "Chengshi Zheng": [
+      1,
+      2
+    ]
+  },
+  "corresponding_author": "Chengshi Zheng",
+  "corresponding_email": "cszheng@mail.ioa.ac.cn",
+  "method_description": "A direction-agnostic front end computes mixture features once. A parameter-shared beamforming head combines those features with each requested steering direction to produce target-specific spatial weights.",
+  "input": {
+    "microphones": 6,
+    "sample_rate_hz": 16000,
+    "array_radius_cm": 5
+  },
+  "curation_disclosure": "These listening examples are curated to illustrate the method's strengths. Aggregate test-set results are reported separately.",
+  "mixture_snr_definition": "Nominal SNR is the power ratio of summed full-reverberant speech to additive non-speech noise, averaged over time and all six microphones. It is not an individual target-to-noise ratio.",
+  "target_reference": "Early-reflected target speech at microphone0, including the direct path and reflections within20ms after it.",
+  "matched_efficiency": [
+    {
+      "id": "controlled_early",
+      "label": "Early fusion",
+      "targets": [
+        1,
+        2,
+        3
+      ],
+      "gmac_per_second": [
+        2.58,
+        5.1,
+        7.62
+      ],
+      "offline_rtf": [
+        0.12241556850000002,
+        0.237660219,
+        0.3481700415
+      ],
+      "p95_software_output_delay_ms_10ms_packets": [
+        23.514367100000072,
+        25.051126300000124,
+        25.888081899999587
+      ],
+      "first_output_ms_10ms_packets": [
+        24.655804,
+        27.349844,
+        29.138954
+      ],
+      "registered_parameters": 794350,
+      "causal_network": true,
+      "sources": [
+        "manuscript:Table2",
+        "timing:controlled_early"
+      ]
+    },
+    {
+      "id": "controlled_late",
+      "label": "Late fusion",
+      "targets": [
+        1,
+        2,
+        3
+      ],
+      "gmac_per_second": [
+        2.59,
+        3.75,
+        4.9
+      ],
+      "offline_rtf": [
+        0.1164967405,
+        0.15739589250000002,
+        0.1923994055
+      ],
+      "p95_software_output_delay_ms_10ms_packets": [
+        23.53128659999975,
+        23.91767080000045,
+        24.27412450000029
+      ],
+      "first_output_ms_10ms_packets": [
+        24.744289,
+        25.638102,
+        26.450052
+      ],
+      "registered_parameters": 794350,
+      "causal_network": true,
+      "sources": [
+        "manuscript:Table2",
+        "timing:controlled_late"
+      ]
+    }
+  ],
+  "three_target_mac_reduction_percent": 35.69553805774278,
+  "three_target_offline_rtf_reduction_percent": 44.73981601889202,
+  "latency": {
+    "model": "Matched late-fusion Lightweight",
+    "targets": 3,
+    "input_packet_ms": 10,
+    "core_stft_ola_buffer_ms": 20,
+    "network_future_spectral_frames": 0,
+    "first_output_ms": 26.450052,
+    "p95_output_delay_ms": 24.27412450000029,
+    "p95_per_packet_processing_ms": 4.19847655,
+    "hardware": "Intel Core i9-10900, one pinned logical CPU, PyTorch intra/inter-op threads1/1",
+    "protocol": "Warm-loaded software waveform input/output;3 paced replays of the same10s six-channel recording. P95 is computed per trial on regular output after1s, then the three P95 values are summarized by their median.",
+    "includes": "Input buffering, computation, scheduling and queueing",
+    "excludes": "Model/file loading, DOA estimation and audio-device/ADC/DAC buffers",
+    "not_hard_realtime_guarantee": true
+  },
+  "aggregate_quality": {
+    "dataset": "Original standard two-source test set",
+    "scenes": 370,
+    "snrs_db": [
+      0,
+      5,
+      10,
+      15
+    ],
+    "targets_per_mixture": 2,
+    "early": {
+      "si_sdr_db": 3.8249719858061386,
+      "estoi": 0.670751,
+      "pesq_nb_table": 2.62,
+      "dnsmos_ovrl": 2.268964263578799
+    },
+    "late": {
+      "si_sdr_db": 4.199452631154998,
+      "estoi": 0.672874,
+      "pesq_nb_table": 2.64,
+      "dnsmos_ovrl": 2.254674935777025
+    },
+    "late_minus_early_si_sdr_db": 0.37448064534885883,
+    "caution": "PESQ/ESTOI mean differences are small; DNSMOS does not favor Late in this matched aggregate comparison. PESQ has missing-score policies; prefer SI-SDR for the demo headline."
+  },
+  "doa_robustness": {
+    "offsets_deg": [
+      -10,
+      -5,
+      0,
+      5,
+      10
+    ],
+    "negative": "away from interferer",
+    "positive": "toward interferer",
+    "early_mean_si_sdr_db": [
+      2.777425721153846,
+      3.7329214476495727,
+      3.824971981837607,
+      3.626280582264957,
+      2.462194123931624
+    ],
+    "late_mean_si_sdr_db": [
+      3.54679594017094,
+      4.073810683760684,
+      4.199452644230769,
+      4.089478926282052,
+      3.394391025641026
+    ],
+    "max_loss_at_plus_minus10_deg": {
+      "early_db": 1.36,
+      "late_db": 0.81
+    },
+    "scope": "Two-source matched models, both targets requested; outputs evaluated against requested target without permutation. Antipodal targets use a tie-breaking arc convention."
+  },
+  "angular_separation": {
+    "degrees": [
+      10,
+      20,
+      30,
+      60
+    ],
+    "late_original_reader_mean_si_sdr_db": [
+      -1.2309429497452336,
+      1.8220746229865226,
+      2.923975816691322,
+      4.101583763765616
+    ],
+    "late_unseen_readers_mean_si_sdr_db": [
+      -1.6388183010765942,
+      1.1014095249835636,
+      2.0941241843359633,
+      3.573441317389876
+    ],
+    "scope": "100 matched acoustic base configurations, four noise settings, both targets; true requested DOA.",
+    "limitation": "Small target/interferer separations remain challenging; the average SI-SDR is negative at10degrees."
+  },
+  "jnf_shared_scope": "Shared JNF-SSF is a noncausal configuration. Its listening results must not inherit the causal Lightweight latency claim.",
+  "listening_runtime_boundary": "Listening examples are prerecorded offline evaluation outputs. Streaming timings were measured separately with a causal-gain software pipeline; they are not a browser inference benchmark or an online speech-quality reevaluation.",
+  "three_target_comparison_label": "Matched Lightweight models, N=3:4.90 versus7.62 GMAC/s; approximately36% fewer operations."
+}
