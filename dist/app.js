@@ -17,7 +17,39 @@
   const metric = kind => { const x = currentTarget()?.metrics?.[kind]; return number(x) ? x : (number(x?.si_sdr) ? x.si_sdr : x?.si_sdr_db); };
   const angle = x => number(x) ? `${Number(x.toFixed(1))}°` : '—';
   const trackData = kind => kind === 'mixture' ? currentCase()?.mixture : currentTarget()?.tracks?.[kind];
-  const categoryLabels = { standard: 'Accurate steering', doa: 'DOA mismatch', unseen: 'Unseen readers' };
+  const categoryLabels = { standard: 'Correct DOA', doa: 'DOA offset', unseen: 'Unseen readers' };
+
+  function renderArrayGeometry() {
+    const host = $('#array-geometry');
+    if (!host) return;
+    const c = currentCase(), selected = currentTarget();
+    const cx = 150, cy = 122, colors = ['#24557a', '#a66729'];
+    const point = (degrees, radius) => {
+      const radians = degrees * Math.PI / 180;
+      return [cx + radius * Math.cos(radians), cy - radius * Math.sin(radians)];
+    };
+    const coord = value => value.toFixed(2);
+    const ticks = Array.from({length:24}, (_, i) => {
+      const a = point(i * 15, 81), b = point(i * 15, i % 6 === 0 ? 89 : 85);
+      return `<line x1="${coord(a[0])}" y1="${coord(a[1])}" x2="${coord(b[0])}" y2="${coord(b[1])}" stroke="#a6afb5"/>`;
+    }).join('');
+    const rays = c.targets.map((t, i) => {
+      const p = point(t.doaDeg, 81), active = i === state.targetIndex;
+      return `<g><line x1="${cx}" y1="${cy}" x2="${coord(p[0])}" y2="${coord(p[1])}" stroke="${colors[i]}" stroke-width="${active ? 2.2 : 1.25}"/><circle cx="${coord(p[0])}" cy="${coord(p[1])}" r="9" fill="#fff" stroke="${colors[i]}" stroke-width="${active ? 2 : 1.25}"/><text x="${coord(p[0])}" y="${coord(p[1]+3.5)}" text-anchor="middle" fill="${colors[i]}" font-size="10" font-weight="600">${i+1}</text></g>`;
+    }).join('');
+    const microphones = Array.from({length:6}, (_,i) => {
+      const p = point(i*60,23);
+      return `<circle cx="${coord(p[0])}" cy="${coord(p[1])}" r="3" fill="#fff" stroke="#4c5961" stroke-width="1.3"/>`;
+    }).join('');
+    const delta = ((c.targets[1].doaDeg-c.targets[0].doaDeg+540)%360)-180;
+    const arcStart = point(c.targets[0].doaDeg,55), arcEnd = point(c.targets[1].doaDeg,55);
+    const arc = `<path d="M${coord(arcStart[0])},${coord(arcStart[1])} A55,55 0 0,${delta>=0?0:1} ${coord(arcEnd[0])},${coord(arcEnd[1])}" fill="none" stroke="#9ca5ac" stroke-dasharray="2 3"/>`;
+    const requested = selected.requestedDoaDeg ?? selected.doaDeg;
+    const offset = Math.abs(((requested-selected.doaDeg+540)%360)-180);
+    const p = point(requested,98);
+    const steering = offset > .01 ? `<line x1="${cx}" y1="${cy}" x2="${coord(p[0])}" y2="${coord(p[1])}" stroke="${colors[state.targetIndex]}" stroke-width="1.5" stroke-dasharray="5 3"/><path d="M${coord(p[0]-3)},${coord(p[1]-3)}l6,6m0,-6l-6,6" stroke="${colors[state.targetIndex]}"/>` : '';
+    host.innerHTML = `<svg viewBox="0 0 320 280" role="img" aria-labelledby="array-diagram-title array-diagram-desc" style="font-family:Arial,sans-serif"><title id="array-diagram-title">Source azimuths for ${escape(c.title)}</title><desc id="array-diagram-desc">Six microphones on a circular array. Target 1: ${angle(c.targets[0].doaDeg)}. Target 2: ${angle(c.targets[1].doaDeg)}. Selected ${escape(selected.label)}; supplied direction ${angle(requested)}. Schematic directions, not a beam pattern.</desc><text x="150" y="16" text-anchor="middle" font-size="12" fill="#40515b">Source separation Δθ = ${angle(c.separationDeg)}</text><g fill="none" stroke="#dce1e5" stroke-width="1"><circle cx="150" cy="122" r="84"/><path d="M50 122H250M150 24V220"/></g>${ticks}<g fill="#64717b" font-size="10"><text x="256" y="126">0°</text><text x="150" y="32" text-anchor="middle">90°</text><text x="40" y="126" text-anchor="end">180°</text><text x="150" y="231" text-anchor="middle">270°</text></g>${arc}${rays}${steering}<circle cx="150" cy="122" r="23" fill="#fff" stroke="#b3bcc2"/>${microphones}<text x="150" y="125.5" text-anchor="middle" fill="#58636a" font-size="9">6 ch.</text><g font-size="11"><circle cx="27" cy="249" r="3" fill="${colors[0]}"/><text x="36" y="253" fill="#36464f">Target 1: ${angle(c.targets[0].doaDeg)}</text><circle cx="166" cy="249" r="3" fill="${colors[1]}"/><text x="175" y="253" fill="#36464f">Target 2: ${angle(c.targets[1].doaDeg)}</text><text x="150" y="273" text-anchor="middle" fill="${colors[state.targetIndex]}">${escape(selected.label)} steering: ${angle(requested)}${offset>.01?' · dashed line':''}</text></g></svg>`;
+  }
 
   function waveform(peaks, id) {
     if (!Array.isArray(peaks) || !peaks.length) return '<svg viewBox="0 0 600 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 17H600" stroke="#4b6571"/></svg>';
@@ -43,7 +75,7 @@
     $('#case-title').textContent = c.title;
     $('#case-description').textContent = c.description || 'Compare matched Early and Late fusion on the same mixture and requested target.';
     $('#scene-meta').innerHTML = `<span><strong>${escape(c.snrDb)} dB</strong> array SNR</span><span><strong>${escape(c.separationDeg)}°</strong> separation</span><span><strong>${escape(c.duration || 31)} s</strong> full recording</span>${c.offsetKind && c.offsetKind !== 'zero' ? `<span><strong>${escape(Math.abs(c.offsetDeg || 0))}°</strong> ${escape(c.offsetKind)} interferer</span>` : '<span>True target DOA</span>'}`;
-    $('#target-tabs').innerHTML = c.targets.map((t,index) => `<button type="button" class="target-button" data-target="${index}" role="tab" aria-controls="tracks" aria-selected="${index===state.targetIndex}" tabindex="${index===state.targetIndex?0:-1}">${escape(t.label || `Target ${index+1}`)}<span class="target-direction">${angle(t.doaDeg)}</span></button>`).join('');
+    $('#target-tabs').innerHTML = c.targets.map((t,index) => `<button type="button" class="target-button" data-target="${index}" role="tab" aria-label="${escape(t.label || `Target ${index+1}`)} at ${angle(t.doaDeg)}" aria-controls="tracks" aria-selected="${index===state.targetIndex}" tabindex="${index===state.targetIndex?0:-1}">${escape(t.label || `Target ${index+1}`)}<span class="target-direction">${angle(t.doaDeg)}</span></button>`).join('');
     $('#tracks').innerHTML = ['mixture','reference','early','late'].map((kind,index) => {
       const track = trackData(kind); const score = metric(kind);
       const scoreText = (kind==='early' || kind==='late') && number(score) ? `<span class="track-metric">${score.toFixed(2)}<small>dB SI-SDR</small></span>` : '';
@@ -52,6 +84,7 @@
     const early = metric('early'), late = metric('late');
     const delta = number(early) && number(late) ? `${late-early>=0?'+':''}${(late-early).toFixed(2)} dB` : '—';
     $('#scene-details-content').innerHTML = `<dl><dt>Selected target</dt><dd>${escape(target.label || `Target ${state.targetIndex+1}`)}</dd><dt>True / supplied DOA</dt><dd>${angle(target.doaDeg)} / ${angle(target.requestedDoaDeg ?? target.doaDeg)}</dd><dt>Late − Early</dt><dd>${delta} SI-SDR, full ${escape(c.duration || 31)}-second recording</dd><dt>Reference</dt><dd>Early-reflected target speech at microphone 0.</dd><dt>Source pool</dt><dd>${escape(c.category==='unseen'?'Readers absent from training and validation':(c.sourcePool || 'Original test source pool'))}</dd><dt>Scene ID</dt><dd>${escape(c.sceneId || c.id)}</dd></dl><p>Nominal array SNR uses total reverberant speech power and additive-noise power across all six microphones. The input player presents microphone 0.</p><p>Each method receives the same mixture and requested direction. Both target outputs are available via the tabs above. Waveforms show shape, with each visual normalized for legibility; audio levels use a common gain within the scene.</p>`;
+    renderArrayGeometry();
     updatePlayback();
   }
 
