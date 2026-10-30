@@ -202,7 +202,7 @@
   async function load() {
     renderFacts({});
     try{
-      const [examples,facts]=await Promise.all([fetch('data/examples.json').then(r=>{if(!r.ok)throw new Error('Missing examples');return r.json();}),fetch('data/facts.json').then(r=>r.ok?r.json():null).catch(()=>null)]);
+      const [examples,facts]=await Promise.all([fetch('data/examples.json?v=20261030-plain').then(r=>{if(!r.ok)throw new Error('Missing examples');return r.json();}),fetch('data/facts.json?v=20261030-plain').then(r=>r.ok?r.json():null).catch(()=>null)]);
       const cases=examples.cases || examples.examples;
       if(!Array.isArray(cases)||!cases.length||cases.some(c=>!Array.isArray(c.targets)||!c.targets.length))throw new Error('No complete examples');
       state.cases=cases;if(facts)renderFacts(facts);renderCases();renderExample();
