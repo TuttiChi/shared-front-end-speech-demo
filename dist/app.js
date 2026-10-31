@@ -207,7 +207,6 @@
   }
   document.querySelector('.number-switch').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(b)renderEfficiency(Number(b.dataset.n));});
 
-  let citation='';
   function renderFacts(facts) {
     state.facts=facts.public || facts;
     const f=state.facts;
@@ -215,13 +214,8 @@
     if(f.authors?.length)$('#authors').innerHTML=f.authors.map(a=>`${escape(a)}${f.author_affiliation_ids?.[a]?`<sup>${f.author_affiliation_ids[a].join(',')}</sup>`:''}`).join(' · ');
     if(f.affiliations?.length)$('#affiliations').innerHTML=f.affiliations.map(a=>`<p><sup>${escape(a.id)}</sup>${escape(a.name)}${a.city?', '+escape(a.city):''}</p>`).join('');
     if(f.aggregate_quality){$('#aggregate-early').innerHTML=`${f.aggregate_quality.early.si_sdr_db.toFixed(2)}<small>dB</small>`;$('#aggregate-late').innerHTML=`${f.aggregate_quality.late.si_sdr_db.toFixed(2)}<small>dB</small>`;}
-    citation=`@misc{chi2026sharedfront,\n  title = {${f.title || $('#paper-title').textContent}},\n  author = {${(f.authors || ['Cheng Chi','Yuxuan Ke','Andong Li','Dan Rao','Xiaodong Li','Chengshi Zheng']).join(' and ')}},\n  year = {2026},\n  note = {Research manuscript}\n}`;
-    $('#bibtex').textContent=citation;renderEfficiency(state.n);
+    renderEfficiency(state.n);
   }
-  $('#copy-citation').addEventListener('click',async()=>{
-    try{await navigator.clipboard.writeText(citation);$('#citation-status').textContent='BibTeX copied to clipboard.';}
-    catch{$('.citation-details').open=true;const range=document.createRange();range.selectNodeContents($('#bibtex'));const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);$('#citation-status').textContent='Citation selected. Copy it using your browser.';}
-  });
 
   async function load() {
     renderFacts({});

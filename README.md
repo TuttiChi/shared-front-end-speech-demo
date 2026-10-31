@@ -4,6 +4,8 @@ Static, portable research demo for **Real-time and efficient multi-target speech
 
 **[Listen to the demo](https://tuttichi.github.io/shared-front-end-speech-demo/)** · [Repository](https://github.com/TuttiChi/shared-front-end-speech-demo)
 
+Paper, model code and checkpoints: **Coming soon**. The public page displays availability notices in place of download and citation controls. This repository hosts the demo website.
+
 ## Local preview
 
 From this folder, run:
@@ -48,7 +50,6 @@ The six paper models use archived outputs from the manuscript comparison; their 
 
 - `dist/index.html`, `styles.css`, `app.js`: presentation and synchronized player.
 - `dist/assets/audio/`: 28 matched Early/Late WAVs, plus 30 paper-comparison WAVs in `paper-baselines/`.
-- `dist/assets/manuscript.pdf`: a copy of the current manuscript PDF.
 - `dist/assets/method-architecture.svg` and `.pdf`: the manuscript's original Figure 1, exported as vector SVG and provided as the unchanged source PDF.
 - `dist/data/`: public example metadata, measurement facts, and selection manifest.
 - `preview.mjs`: local static server with WAV byte-range support.

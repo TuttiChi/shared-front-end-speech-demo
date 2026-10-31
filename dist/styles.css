@@ -22,3 +22,5 @@
 @media(max-width:360px){.workbench[data-comparison="paper"] .audio-track{grid-template-columns:25px 100px minmax(0,1fr) 23px;column-gap:6px}.workbench[data-comparison="paper"] .tracks-heading{grid-template-columns:137px minmax(0,1fr) 23px}}
 
 .workbench[data-comparison="paper"] .case-description{display:none}
+
+.resource-soon,.resource-soon:hover{color:#65717b;border-color:#d9dfe5;background:#f7f8fa;cursor:default}
