@@ -4,7 +4,7 @@ Static, portable research demo for **Real-time and efficient multi-target speech
 
 **[Listen to the demo](https://tuttichi.github.io/shared-front-end-speech-demo/)** · [Repository](https://github.com/TuttiChi/shared-front-end-speech-demo)
 
-Paper, model code and checkpoints: **Coming soon**. The public page displays availability notices in place of download and citation controls. This repository hosts the demo website.
+Paper and model code: **Coming soon**. Model checkpoints and weights will not be distributed or pushed. This repository hosts the demo website.
 
 ## Local preview
 

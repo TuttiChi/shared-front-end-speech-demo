@@ -7,3 +7,24 @@ __pycache__/
 .DS_Store
 Thumbs.db
 node_modules/
+# Model weights are local-only and must never be pushed.
+weights/
+checkpoints/
+checkpoint/
+*.ckpt
+*.pt
+*.pth
+*.pth.tar
+*.pt.tar
+*.safetensors
+*.onnx
+*.h5
+*.hdf5
+*.tflite
+*.pkl
+*.pickle
+*.joblib
+*.weights
+*.pb
+*.bin
+*.npz
